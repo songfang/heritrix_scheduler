@@ -21,7 +21,8 @@ public class Main {
 	private static List<Event> events;
 	private static final Logger logger = LoggerFactory.getLogger(Main.class);
 	private static final int scanInterval = 300;
-	private static final int sleepTime = 3000;//300000;
+	//private static final int sleepTime = 300000;
+	private static final int sleepTime = 3000;
 	private static ArrayList<Event> startedJobs = new ArrayList<Event>();
 	private static ArrayList<Event> completedJobs= new ArrayList<Event>();
 	private static boolean shouldIBeRunning = true;
@@ -30,6 +31,7 @@ public class Main {
 	public static void main(String[] args) {
 			// INIT
 			buildHeritrixSession();
+			GoogleCalendarHelper.initLog();
 			GoogleCalendarHelper.init();
 			// Init logging
 			DOMConfigurator.configure("./log4j.xml");
@@ -67,7 +69,6 @@ public class Main {
 				}
 				startedJobs = tmp;
 				// Remove completed jobs from startedJobs
-				// TODO - this.. needful
 				try {
 				Iterator<Event> iter = startedJobs.iterator();
 				while (iter.hasNext()) {

@@ -37,33 +37,42 @@ public class GoogleCalendarHelper {
 			for (Event event : getEventList(minTime, maxTime)) {
 				logger.debug(event.getId() + ": " + event.getSummary() + " " + event.getDescription());
 			}
-			} catch (Exception e) {
-				logger.info("Exception in test..likely");
-				logger.debug(e.getMessage());
-			}
+		} catch (Exception e) {
+			logger.info("Exception in test..likely");
+			logger.debug(e.getMessage());
+		}
 	}
-
-	public static void init() {
+	public static void initLog() {
 		// Init loggin
 		DOMConfigurator.configure("./log4j.xml");
+	}
+	public static void init() {
+		try {
+			Thread.sleep(3000);
+		} catch (Exception e) {
+			logger.info("We just threw an exception in Thread.sleep()...");
+		}
 
 		try {
-		GoogleCredential credentials = new GoogleCredential.Builder()
-					.setTransport(GoogleNetHttpTransport.newTrustedTransport())
-					.setJsonFactory(new GsonFactory())
-					.setServiceAccountId(
+			GoogleCredential credentials = new GoogleCredential.Builder()
+				.setTransport(GoogleNetHttpTransport.newTrustedTransport())
+				.setJsonFactory(new GsonFactory())
+				.setServiceAccountId(
 						"285001760835-6obkg70r3bgk8mujca3hdif4pvm9ssnv@developer.gserviceaccount.com")
-					.setServiceAccountScopes(
+				.setServiceAccountScopes(
 						Arrays.asList("https://www.googleapis.com/auth/calendar"))
-					.setServiceAccountPrivateKeyFromP12File(
+				.setServiceAccountPrivateKeyFromP12File(
 						new File(
 							"resources/a8e3ad8111ef7206ab7cef093c1bb4e4b2301113-privatekey.p12"))
-					.build();
-				client = new Calendar.Builder(
-						GoogleNetHttpTransport.newTrustedTransport(),
-						new GsonFactory(), credentials).setApplicationName("gcalget")
-					.build();
-				logger.debug("Google calendar opened!");
+				.build();
+			client = new Calendar.Builder(
+					GoogleNetHttpTransport.newTrustedTransport(),
+					new GsonFactory(), credentials).setApplicationName("gcalget")
+				.build();
+			logger.debug("Google calendar opened!");
+			// Cyclical call to ensure application doesn't die when failing a connection.
+			checkClient();
+			
 		} catch (GeneralSecurityException e) {
 			logger.info("GeneralSecurityException in init.");
 			logger.debug(e.getMessage());
@@ -78,6 +87,7 @@ public class GoogleCalendarHelper {
 
 	public static List<Event> getEventList(DateTime minTime, DateTime maxTime)
 	{
+		checkClient();
 		String pageToken = null;
 		List<Event> items;
 		try {
@@ -92,7 +102,7 @@ public class GoogleCalendarHelper {
 			if (items != null)
 				return items;
 		} catch (IOException e) {
-			logger.info("IOException oin getEventList");
+			logger.info("IOException in getEventList");
 			logger.debug(e.getMessage());
 		} catch (Exception e) {
 			logger.info("Exception in getEventList");
@@ -102,6 +112,7 @@ public class GoogleCalendarHelper {
 	}
 
 	public static Event getEventById(String id) {
+		checkClient();
 		try {
 			return client.events().get("primary", id).execute();
 		} catch (IOException e) {
@@ -112,6 +123,7 @@ public class GoogleCalendarHelper {
 	}
 
 	public static void setColor(Event event, String colorID) {
+		checkClient();
 		try {
 			logger.debug(event.getSummary().toString() + " - Setting color to: " + colorID);
 			Event evnt = getEventById(event.getId());			
@@ -125,6 +137,7 @@ public class GoogleCalendarHelper {
 	}
 
 	public static void setLocation (Event event, String text) {
+		checkClient();
 		try {
 			logger.debug(event.getLocation().toString() + " - Setting location to: " + text);
 			Event evnt = getEventById(event.getId());			
@@ -142,6 +155,7 @@ public class GoogleCalendarHelper {
 	}
 
 	public static int appendDescription(Event event, String text) {
+		checkClient();
 		try {
 			logger.debug(event.getSummary().toString() + " - Appending description: " + text);
 			String prevDescription;
@@ -157,5 +171,24 @@ public class GoogleCalendarHelper {
 			e.printStackTrace();
 		}
 		return 0;
+	}
+	private static void checkClient() {
+		try {
+			//logger.debug("Checking gCal client.");
+		if (client.calendarList().list().execute() == null)
+
+		{
+			logger.debug("gCal client failed connectivity test.  Calling init");
+			init();
+		}
+		if (client == null)
+		{
+			logger.debug("gCal client is null.  Calling init");
+			init();
+		}
+		} catch (Exception e) {
+			logger.info("We just caught an exception in checkClient().  Calling init().");
+			init();
+		}
 	}
 }
