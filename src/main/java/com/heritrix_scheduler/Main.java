@@ -235,7 +235,7 @@ public class Main {
 		try {
 			session = new HeritrixSessionImpl(
 					new File("resources/keystore.jks"), "password",
-					"10.11.75.40", 82, "admin", "admin");
+					"10.7.44.158", 8002, "admin", "admin");
 			logger.info("Heritrix session built!");
 			return 0;
 		} catch (HeritrixSessionInitializationException e) {
